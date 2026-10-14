@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mis tareas</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fb;color:#172a42;font:16px system-ui,sans-serif}main{max-width:1000px;margin:60px auto;padding:24px}header p{color:#53667d}h1{font-size:38px;margin-bottom:8px}.barra{display:flex;gap:16px;flex-wrap:wrap;align-items:end;margin:30px 0}label{display:grid;gap:8px}input,select,button{font:inherit;border:1px solid #bbc8d8;border-radius:8px;padding:10px}button{cursor:pointer;background:#184dcc;color:white}button:disabled{opacity:.6;cursor:wait}#lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}article{background:white;border:1px solid #dce3ee;border-radius:14px;padding:24px}article h2{font-size:20px}.estado{display:inline-block;padding:5px 10px;border-radius:20px;background:#edf2ff;color:#224ab0;font-size:14px}.completada{background:#e3f7eb;color:#206b43}#mensaje{min-height:24px}dialog{border:1px solid #dce3ee;border-radius:14px;max-width:90vw;padding:28px}dialog::backdrop{background:#172a4266}pre{white-space:pre-wrap;overflow-wrap:anywhere}button.secundario{background:white;color:#184dcc;margin-right:8px}
+</style></head>
+<body><main>
+<header><small>MI ESPACIO DE ESTUDIO</small><h1>Mis tareas</h1><p>Consulta tus entregas y marca lo que ya terminaste.</p></header>
+<div class="barra"><label>Estado<select id="estado"><option value="">Todas las tareas</option><option value="pendiente">Pendientes</option><option value="completada">Completadas</option></select></label>
+<form id="buscar"><label for="id">Consultar por ID</label><input id="id" type="number" min="1" step="1" required placeholder="Ej. 1" style="width:140px"><button>Consultar</button></form></div>
+<p id="mensaje" role="status" aria-live="polite"></p><section id="lista" aria-label="Tareas"></section>
+<dialog id="detalle"><h2>Detalle de la tarea</h2><pre id="datos"></pre><button id="cerrar">Cerrar</button></dialog>
+</main><script>
+const lista=document.querySelector('#lista'), mensaje=document.querySelector('#mensaje'), filtro=document.querySelector('#estado');
+async function api(url,options={}){const r=await fetch(url,options);const tipo=r.headers.get('content-type')||'';const data=tipo.includes('application/json')?await r.json():null;if(!r.ok)throw Error(data?.error||`Error HTTP ${r.status}`);return data;}
+function texto(tag,value,parent){const el=document.createElement(tag);el.textContent=value;parent.append(el);return el;}
+let secuencia=0;
+async function cargar(){const actual=++secuencia;mensaje.textContent='Cargando tareas…';try{const tareas=await api('/api/tarea/'+(filtro.value?'?estado='+filtro.value:''));if(actual!==secuencia)return;lista.replaceChildren();mensaje.textContent=tareas.length?`${tareas.length} tarea(s)`:'No hay tareas para este filtro.';for(const t of tareas){const card=document.createElement('article');texto('small',t.curso,card);texto('h2',t.titulo,card);texto('p',`Entrega: ${t.fechaEntrega}`,card);texto('p',t.estado,card).className='estado '+t.estado;const acciones=document.createElement('div');const ver=texto('button','Ver detalle',acciones);ver.className='secundario';ver.onclick=()=>verDetalle(t.id);if(t.estado==='pendiente'){const boton=texto('button','Completar',acciones);boton.onclick=async()=>{boton.disabled=true;try{const token=document.cookie.split('; ').find(c=>c.startsWith('csrftoken='))?.split('=')[1];await api('/api/tarea/'+t.id,{method:'PATCH',headers:{'Content-Type':'application/json','X-CSRFToken':token},body:JSON.stringify({estado:'completada'})});await cargar();}catch(e){mensaje.textContent=e.message;boton.disabled=false;}};}card.append(acciones);lista.append(card);}}catch(e){if(actual===secuencia){lista.replaceChildren();mensaje.textContent=e.message;}}}
+async function verDetalle(id){try{const t=await api('/api/tarea/'+id);document.querySelector('#datos').textContent=JSON.stringify(t,null,2);document.querySelector('#detalle').showModal();}catch(e){mensaje.textContent=e.message;}}
+filtro.onchange=cargar;document.querySelector('#buscar').onsubmit=e=>{e.preventDefault();verDetalle(document.querySelector('#id').value);};document.querySelector('#cerrar').onclick=()=>document.querySelector('#detalle').close();cargar();
+</script></body></html>

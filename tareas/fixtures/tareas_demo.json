@@ -1,0 +1,5 @@
+[
+  {"model":"tareas.tarea","pk":1,"fields":{"titulo":"Resolver ecuaciones","curso":"Matemáticas","fechaEntrega":"2026-11-05","estado":"pendiente"}},
+  {"model":"tareas.tarea","pk":2,"fields":{"titulo":"Ensayo sobre la independencia","curso":"Historia","fechaEntrega":"2026-11-08","estado":"pendiente"}},
+  {"model":"tareas.tarea","pk":3,"fields":{"titulo":"Leer el primer capítulo","curso":"Literatura","fechaEntrega":"2026-11-03","estado":"completada"}}
+]
